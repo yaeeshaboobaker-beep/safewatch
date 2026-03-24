@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        <a href="{{ url_for('main.home') }}" class="text-decoration-none text-slate-500 mb-4 d-inline-flex align-items-center gap-2 hover-opacity fw-medium">
+            <i data-lucide="arrow-left" class="lucide-sm"></i> Return to Dashboard
+        </a>
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge {% if incident.severity == 'High' %} badge-soft-danger {% elif incident.severity == 'Medium' %} badge-soft-warning {% else %} badge-soft-success {% endif %} rounded-pill px-3 py-1 fw-bold border">
+                        {{ incident.severity }} Priority
+                    </span>
+                    <span class="text-slate-500 small fw-medium">ID: #{{ incident.id }}</span>
+                </div>
+                <h1 class="fw-bolder text-brand-blue mb-2">{{ incident.incident_type }}</h1>
+                <div class="d-flex flex-wrap gap-3 align-items-center text-slate-500 small fw-medium">
+                    <span class="d-flex align-items-center gap-1"><i data-lucide="calendar" class="lucide-sm"></i> {{ incident.date_posted.strftime('%d %B %Y at %H:%M') }}</span>
+                    <span>•</span>
+                    <span class="d-flex align-items-center gap-1">
+                        <i data-lucide="user" class="lucide-sm"></i> 
+                        Reported by: 
+                        {% if incident.is_anonymous and current_user.role != 'admin' %}
+                            <span class="text-danger fw-bold"><i data-lucide="mask" class="lucide-sm"></i> Anonymous Citizen</span>
+                        {% else %}
+                            {{ incident.author.first_name }} {{ incident.author.last_name }}
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="text-md-end">
+                <span class="text-slate-500 small fw-bold d-block mb-1 text-uppercase tracking-wide">Current Status</span>
+                <span class="badge {% if incident.status == 'Pending' %} bg-danger {% elif incident.status == 'Dispatched' %} bg-info text-dark {% else %} bg-success {% endif %} rounded-pill px-4 py-2 fs-6 shadow-sm mb-2 d-block">
+                    {{ incident.status }}
+                </span>
+                {% if incident.eta and incident.status != 'Resolved' %}
+                    <span class="text-dark fw-bold badge bg-warning rounded-pill px-3"><i data-lucide="clock" class="lucide-sm"></i> ETA: {{ incident.eta }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            
+            <div class="col-md-8">
+                <div class="card card-custom-shadow border-light rounded-4 bg-white mb-4 overflow-hidden">
+                    <div id="incidentMap" style="height: 300px; width: 100%; z-index: 1;"></div>
+                    
+                    <div class="card-body p-4 p-md-5">
+                        <h6 class="fw-bold text-brand-blue mb-2 d-flex align-items-center gap-2 text-uppercase tracking-wide small">
+                            <i data-lucide="map-pin" class="text-primary lucide-sm"></i> Exact Location
+                        </h6>
+                        <p class="text-dark fw-medium mb-4 fs-5">{{ incident.location }}</p>
+
+                        <hr class="border-light mb-4">
+
+                        <h6 class="fw-bold text-brand-blue mb-3 d-flex align-items-center gap-2 text-uppercase tracking-wide small">
+                            <i data-lucide="file-text" class="text-primary lucide-sm"></i> Incident Details
+                        </h6>
+                        <p class="text-slate-500 lh-lg mb-0" style="white-space: pre-wrap; font-size: 1.05rem;">{{ incident.description }}</p>
+                    </div>
+                </div>
+                
+                {% if incident.media_path %}
+                <div class="card card-custom-shadow border-light rounded-4 bg-white p-4">
+                    <h6 class="fw-bold text-brand-blue mb-3 d-flex align-items-center gap-2 text-uppercase tracking-wide small">
+                        <i data-lucide="image" class="text-primary lucide-sm"></i> Attached Media Evidence
+                    </h6>
+                    <img src="{{ url_for('static', filename='incident_pics/' + incident.media_path) }}" class="img-fluid rounded-3 border border-light" alt="Incident Media">
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-4">
+                
+                {% if current_user.role == 'responder' and current_user.availability != 'On Duty' %}
+                    <div class="alert alert-danger rounded-4 border-0 p-4 shadow-sm text-center mb-4">
+                        <i data-lucide="lock" class="lucide-lg mb-2 text-danger"></i>
+                        <h6 class="fw-bold text-danger">Action Center Locked</h6>
+                        <p class="small mb-0">You must clock in to <strong>"On Duty"</strong> from your dashboard to interact with active scenes.</p>
+                    </div>
+                {% endif %}
+
+                <div class="card card-custom-shadow border-light rounded-4 bg-white p-4 sticky-top mb-4" style="top: 100px;">
+                    <h5 class="fw-bold text-brand-blue mb-4 d-flex align-items-center gap-2">
+                        <i data-lucide="shield-alert" class="text-danger"></i> Action Center
+                    </h5>
+                    
+                    <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 p-3 rounded-3 mb-4 text-center">
+                        <p class="small text-brand-blue mb-1 fw-bold text-uppercase tracking-wide">Community Zone</p>
+                        <h4 class="text-primary fw-bolder mb-0 d-flex justify-content-center align-items-center gap-2">
+                            <i data-lucide="map" class="lucide-sm"></i> {{ incident.author.area.code }}
+                        </h4>
+                    </div>
+
+                    {% if current_user.role in ['responder', 'admin'] %}
+                        <a href="https://www.google.com/maps/dir/?api=1&destination={{ incident.latitude }},{{ incident.longitude }}" target="_blank" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-2 mb-4 d-flex justify-content-center align-items-center gap-2 shadow-sm">
+                            <i data-lucide="navigation" class="lucide-sm"></i> Get Directions
+                        </a>
+                    {% endif %}
+
+                    {% if current_user.role in ['responder', 'admin'] and (current_user.availability == 'On Duty' or current_user.role == 'admin') %}
+                        
+                        {% if incident.status == 'Pending' %}
+                            <form action="{{ url_for('main.update_status', incident_id=incident.id) }}" method="POST" class="mb-4">
+                                <input type="hidden" name="action" value="dispatch">
+                                <label class="small fw-bold text-slate-500 mb-1">Estimated Arrival (ETA):</label>
+                                <input type="text" name="eta" class="form-control mb-3" placeholder="e.g. 5 mins, 10 mins" required>
+                                <button class="btn btn-info text-dark w-100 rounded-pill fw-bold py-3 shadow-sm" type="submit">
+                                    <i data-lucide="truck" class="lucide-sm"></i> Dispatch to Scene
+                                </button>
+                            </form>
+                            
+                        {% elif incident.status == 'Dispatched' %}
+                            <div class="d-grid gap-2 mb-4">
+                                <form action="{{ url_for('main.update_status', incident_id=incident.id) }}" method="POST" onsubmit="return confirm('CRITICAL: Resolve this incident?');">
+                                    <input type="hidden" name="action" value="resolve">
+                                    <button class="btn btn-success w-100 rounded-pill fw-bold py-3 shadow-sm" type="submit">
+                                        <i data-lucide="check-circle" class="lucide-sm"></i> Mark Resolved
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('main.update_status', incident_id=incident.id) }}" method="POST" onsubmit="return confirm('ESCALATE to High Priority and request backup?');">
+                                    <input type="hidden" name="action" value="escalate">
+                                    <button class="btn btn-outline-danger w-100 rounded-pill fw-bold py-2" type="submit">
+                                        <i data-lucide="alert-triangle" class="lucide-sm"></i> Escalate / Backup
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if current_user.role == 'admin' or (current_user.role == 'responder' and current_user.availability == 'On Duty') or current_user == incident.author %}
+                        <div class="bg-light p-3 rounded-4 border border-light mt-4">
+                            <h6 class="small fw-bold text-slate-500 mb-2"><i data-lucide="book-open" class="lucide-sm"></i> Live Communication Log</h6>
+                            <div class="small text-dark mb-3" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto; font-family: monospace;">{{ incident.internal_notes or "No messages yet." }}</div>
+                            
+                            {% if incident.status != 'Resolved' %}
+                            <form action="{{ url_for('main.update_status', incident_id=incident.id) }}" method="POST">
+                                <input type="hidden" name="action" value="update_notes">
+                                <textarea name="internal_notes" class="form-control form-control-sm mb-2" rows="2" placeholder="Type a message to the responder..." required></textarea>
+                                <button class="btn btn-dark btn-sm w-100 rounded-pill fw-bold" type="submit">Post Message</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if incident.status == 'Resolved' %}
+                        <hr class="border-light my-4">
+                        {% if not incident.resident_feedback and current_user == incident.author %}
+                            <form action="{{ url_for('main.submit_feedback', incident_id=incident.id) }}" method="POST">
+                                <h6 class="fw-bold text-dark mb-2"><i data-lucide="message-square" class="text-primary lucide-sm"></i> Rate the Response</h6>
+                                <p class="small text-slate-500">How did the responders do? Leave a private review for the admins.</p>
+                                <textarea name="feedback" class="form-control mb-2" rows="3" placeholder="Your feedback..." required></textarea>
+                                <button class="btn btn-primary w-100 rounded-pill fw-bold" type="submit">Submit Feedback</button>
+                            </form>
+                        {% elif incident.resident_feedback and current_user.role in ['admin', 'responder'] %}
+                            <div class="alert alert-info border-0 rounded-4">
+                                <h6 class="fw-bold text-brand-blue mb-1"><i data-lucide="star" class="text-warning lucide-sm fill-warning"></i> Citizen Feedback</h6>
+                                <p class="small mb-0 text-dark">"{{ incident.resident_feedback }}"</p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if current_user.role == 'admin' or (incident.author == current_user and incident.status != 'Resolved') %}
+                    <hr class="border-light my-4">
+                    <form action="{{ url_for('main.delete_incident', incident_id=incident.id) }}" method="POST" onsubmit="return confirm('WARNING: Are you sure you want to permanently delete this report? This cannot be undone.');">
+                        <button type="submit" class="btn btn-outline-danger w-100 rounded-pill fw-bold py-2 d-flex justify-content-center align-items-center gap-2">
+                            <i data-lucide="trash-2" class="lucide-sm"></i> Delete Report
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    var lat = {{ incident.latitude | default(-29.8587, true) }};
+    var lng = {{ incident.longitude | default(31.0218, true) }};
+    
+    var map = L.map('incidentMap', {
+        zoomControl: true,
+        scrollWheelZoom: false 
+    }).setView([lat, lng], 15);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var marker = L.marker([lat, lng]).addTo(map);
+    marker.bindPopup("<b style='color:#0f172a;'>{{ incident.incident_type }}</b><br>Reported Location").openPopup();
+</script>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card card-custom-shadow mt-3 mb-5 border-0 rounded-4 bg-white">
+            <div class="card-header bg-danger text-white py-3 rounded-top-4 border-0">
+                <h4 class="card-title mb-0 fw-semibold">
+                    <i class="bi bi-megaphone-fill me-2"></i> Report an incident
+                </h4>
+            </div>
+            
+            <div class="card-body p-4">
+              
+                <form method="POST" action="" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold"><i class="bi bi-tags me-1 text-danger"></i> {{ form.incident_category.label.text }}</label>
+                            {{ form.incident_category(class="form-select form-select-lg bg-light border-0 shadow-sm", id="catSelect") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold"><i class="bi bi-card-list me-1 text-danger"></i> {{ form.incident_type.label.text }}</label>
+                            {{ form.incident_type(class="form-select form-select-lg bg-light border-0 shadow-sm", id="typeSelect") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4 p-3 bg-light rounded-4 border border-danger border-opacity-10">
+                        <label class="form-label fw-semibold text-danger mb-2">
+                            <i class="bi bi-geo-alt-fill me-1"></i> Pin the exact location
+                        </label>
+                        <p class="small text-secondary mb-3">
+                            🔍 Use the search bar on the map, or click/tap anywhere to drop a marker. Map is restricted to eThekwini Municipality.
+                        </p>
+                        
+                        <div id="map" style="height: 320px; border-radius: 16px; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 1;"></div>
+                        
+                        {{ form.latitude(id="latitude") }}
+                        {{ form.longitude(id="longitude") }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="bi bi-signpost me-1 text-danger"></i> {{ form.location.label.text }}</label>
+                        {{ form.location(class="form-control bg-light border-0", id="location", readonly=true, placeholder="📍 Address appears here after placing a marker") }}
+                        {% if form.location.errors %}
+                            <div class="text-danger small mt-2">
+                                {% for error in form.location.errors %}<i class="bi bi-exclamation-circle me-1"></i>{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-slate-500 small mb-1"><i data-lucide="alert-triangle" class="lucide-sm text-danger me-1"></i> {{ form.scale.label.text }}</label>
+                        {{ form.scale(class="form-select border-danger border-opacity-25 bg-danger bg-opacity-10 shadow-sm fw-medium text-dark") }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="bi bi-pencil-square me-1 text-danger"></i> {{ form.description.label.text }}</label>
+                        {{ form.description(class="form-control bg-light border-0", rows="4", placeholder="Describe what happened – time, people, details that may help responders...") }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="bi bi-camera me-1 text-danger"></i> {{ form.picture.label.text }} <span class="fw-light text-secondary">(Optional)</span></label>
+                        {{ form.picture(class="form-control bg-light border-0") }}
+                    </div>
+
+                    <div class="mb-4 p-3 rounded-3 border" id="anonymousBox" style="display: none; background-color: #1e293b; color: white;">
+                        <div class="form-check form-switch d-flex align-items-center gap-2">
+                            {{ form.is_anonymous(class="form-check-input fs-4", id="anonSwitch") }}
+                            <label class="form-check-label fw-semibold" for="anonSwitch">
+                                <i data-lucide="user-x" class="text-warning me-1"></i> Submit Anonymously
+                                <span class="d-block small text-light opacity-75 fw-normal mt-1">Your identity will be hidden from the community and responders. For criminal tips only.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger btn-lg fw-semibold rounded-pill py-3">
+                            <i class="bi bi-send-fill me-2"></i> Submit report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+<script>
+    var durbanBounds = L.latLngBounds(
+        L.latLng(-30.2500, 30.6000), 
+        L.latLng(-29.4500, 31.2500)  
+    );
+
+    var map = L.map('map', {
+        maxBounds: durbanBounds,    
+        maxBoundsViscosity: 1.0,    
+        minZoom: 10                 
+    }).setView([-29.8489, 31.0003], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var marker;
+
+    var geocoder = L.Control.geocoder({
+        defaultMarkGeocode: false,
+        placeholder: "Search for a street or suburb in Durban...",
+        geocoder: L.Control.Geocoder.nominatim({
+            geocodingQueryParams: {
+                countrycodes: 'za', 
+                viewbox: '30.6000,-29.4500,31.2500,-30.2500', 
+                bounded: 1 
+            }
+        })
+    })
+    .on('markgeocode', function(e) {
+        var latlng = e.geocode.center;
+        
+        if (!durbanBounds.contains(latlng)) {
+            alert("This location appears to be outside the eThekwini Municipality.");
+            return;
+        }
+
+        map.fitBounds(e.geocode.bbox);
+        placeMarkerAndFetchAddress(latlng, e.geocode.name);
+    })
+    .addTo(map);
+
+    function placeMarkerAndFetchAddress(latlng, knownAddress) {
+        if (!durbanBounds.contains(latlng)) {
+            alert("Please select a location within the designated eThekwini boundaries.");
+            return; 
+        }
+
+        if (marker) map.removeLayer(marker);
+        marker = L.marker(latlng).addTo(map);
+        
+        document.getElementById('latitude').value = latlng.lat;
+        document.getElementById('longitude').value = latlng.lng;
+
+        var locationInput = document.getElementById('location');
+        if (knownAddress) {
+            locationInput.value = knownAddress;
+        } else {
+            locationInput.value = "Fetching address...";
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latlng.lat}&lon=${latlng.lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    locationInput.value = data.display_name || "Location selected on map";
+                })
+                .catch(() => {
+                    locationInput.value = "Location selected on map (address unavailable)";
+                });
+        }
+    }
+
+    map.on('click', function(e) {
+        placeMarkerAndFetchAddress(e.latlng, null);
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const catSelect = document.getElementById("catSelect");
+        const typeSelect = document.getElementById("typeSelect");
+        const allOptions = Array.from(typeSelect.options);
+        
+        const categoryMap = {
+            'Emergency': ['Fire', 'Medical Emergency', 'Armed Robbery / Home Invasion', 'Active Break-In', 'Assault', 'Missing Person', 'Child Endangerment'],
+            'Crime': ['Theft / Shoplifting', 'Vehicle Theft / Hijacking', 'Vandalism', 'Drug Activity', 'Gang Activity', 'Domestic Violence', 'Suspicious Person / Vehicle', 'Trespassing', 'Fraud / Scam'],
+            'Disaster': ['Flooding', 'Severe Storm', 'Earthquake', 'Drought'],
+            'Infrastructure': ['Power Outage', 'Water Supply Failure', 'Gas Leak', 'Sewage Leak', 'Road Damage', 'Downed Power Lines', 'Traffic Accident'],
+            'Environmental': ['Illegal Dumping', 'Dangerous Animal', 'Pest Infestation'],
+            'Community': ['Protest / Civil Unrest', 'Noise Complaint', 'Abandoned Vehicle', 'Street Light Outage'],
+            'Other': ['Other']
+        };
+
+        function updateTypeOptions() {
+            const selectedCat = catSelect.value;
+            typeSelect.innerHTML = ''; 
+            
+            if (selectedCat && categoryMap[selectedCat]) {
+                const allowedTypes = categoryMap[selectedCat];
+                typeSelect.add(new Option("Select specific type...", ""));
+                allOptions.forEach(opt => {
+                    if (allowedTypes.includes(opt.value)) {
+                        typeSelect.add(opt.cloneNode(true));
+                    }
+                });
+            } else {
+                typeSelect.add(new Option("Select a category first...", ""));
+            }
+        }
+
+        catSelect.addEventListener("change", function() {
+            updateTypeOptions();
+            const anonBox = document.getElementById("anonymousBox");
+            if (this.value === 'Crime') {
+                anonBox.style.display = 'block';
+            } else {
+                anonBox.style.display = 'none';
+                document.getElementById('anonSwitch').checked = false; 
+            }
+        });
+        updateTypeOptions();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .ticker-container {
+        width: 100%;
+        overflow: hidden;
+        background-color: #ffffff;
+        padding: 15px 0;
+        border-top: 2px solid #e2e8f0;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .ticker-wrapper {
+        display: flex;
+        width: max-content;
+        animation: tickerScroll 40s linear infinite;
+    }
+    .ticker-wrapper:hover { animation-play-state: paused; }
+    .ticker-item {
+        display: inline-flex;
+        align-items: center;
+        margin: 0 15px;
+        padding: 8px 20px;
+        background: #f8fafc;
+        border-radius: 2px;
+        border: 1px solid #e2e8f0;
+        white-space: nowrap;
+        border-left: 4px solid;
+    }
+    @keyframes tickerScroll {
+        0% { transform: translateX(50vw); }
+        100% { transform: translateX(-100%); }
+    }
+    
+    .shadow-hover { transition: all 0.2s ease-in-out; }
+    .shadow-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05) !important; }
+    
+    .feature-box {
+        padding: 2rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        height: 100%;
+        transition: border-color 0.3s;
+    }
+    .feature-box:hover {
+        border-color: #0f172a;
+    }
+</style>
+
+{% if not current_user.is_authenticated %}
+    
+    <div class="row mt-2 mb-5">
+        <div class="col-12 px-0">
+            <div class="position-relative overflow-hidden" style="background: url('https://images.unsplash.com/photo-1580060839134-77a4a98436cb?q=80&w=1920&auto=format&fit=crop') no-repeat center center / cover; min-height: 500px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1);">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(15, 23, 42, 0.85);"></div>
+                
+                <div class="position-relative z-index-1 d-flex flex-column justify-content-center align-items-center h-100 text-center text-white p-4" style="min-height: 500px;">
+                    <div style="width: 60px; height: 4px; background-color: #ef4444; margin-bottom: 25px;"></div>
+                    
+                    <h1 class="display-3 fw-bolder mb-3 text-uppercase tracking-wide" style="letter-spacing: -1px;">SafeWatch</h1>
+                    <h3 class="fw-bold text-warning mb-4 font-monospace">REPORT. ALERT. PROTECT.</h3>
+                    
+                    <p class="lead mb-5 fw-normal text-light opacity-75" style="max-width: 650px; margin: 0 auto; line-height: 1.6;">
+                         
+                    </p>
+                    
+                    <div class="d-flex flex-column flex-sm-row gap-3">
+                        <a href="{{ url_for('main.register') }}" class="btn btn-warning btn-lg px-5 py-3 fw-bolder rounded-1 text-dark text-uppercase shadow-sm">
+                            Join the Network
+                        </a>
+                        <a href="{{ url_for('main.login') }}" class="btn btn-outline-light btn-lg px-5 py-3 fw-bolder rounded-1 text-uppercase">
+                            Authorized Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12 px-0">
+            <div class="d-flex align-items-center px-4 mb-3 gap-2">
+                <i data-lucide="radio" class="text-danger"></i>
+                <h6 class="text-danger fw-bolder mb-0 text-uppercase tracking-wide">Live Grid Activity</h6>
+            </div>
+            
+            <div class="ticker-container">
+                <div class="ticker-wrapper">
+                    {% for incident in incidents.items %}
+                        <div class="ticker-item {% if incident.severity == 'High' %} border-danger {% elif incident.severity == 'Medium' %} border-warning {% else %} border-success {% endif %}">
+                            <span class="badge rounded-1 me-3 {% if incident.severity == 'High' %} bg-danger {% elif incident.severity == 'Medium' %} bg-warning text-dark {% else %} bg-success {% endif %}">{{ incident.severity }}</span>
+                            <strong class="me-3 text-brand-blue">{{ incident.incident_type }}</strong>
+                            <span class="text-muted me-3 border-start ps-3 d-flex align-items-center gap-1"><i data-lucide="map-pin" class="text-danger" style="width: 14px;"></i> {{ incident.location | truncate(35) }}</span>
+                            <span class="text-muted small d-flex align-items-center gap-1"><i data-lucide="clock" style="width: 14px;"></i> {{ incident.date_posted.strftime('%H:%M') }}</span>
+                        </div>
+                    {% else %}
+                        <div class="ticker-item border-success">
+                            <i data-lucide="shield-check" class="text-success me-2"></i>
+                            <strong class="text-brand-blue">All Clear!</strong> 
+                            <span class="text-muted ms-2">No active public incidents reported on the grid.</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5 pb-5">
+        <div class="col-md-4">
+            <div class="feature-box text-center">
+                <div class="bg-light text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 60px; height: 60px;">
+                    <i data-lucide="megaphone" style="width: 30px; height: 30px;"></i>
+                </div>
+                <h5 class="fw-bolder text-brand-blue text-uppercase">Incident Reporting</h5>
+                <p class="text-slate-500 small mb-0 mt-3"> Pin your exact location and send evidence directly to the active responder dashboards</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-box text-center">
+                <div class="bg-light text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 60px; height: 60px;">
+                    <i data-lucide="siren" style="width: 30px; height: 30px;"></i>
+                </div>
+                <h5 class="fw-bolder text-brand-blue text-uppercase">Live Dispatch ETA</h5>
+                <p class="text-slate-500 small mb-0 mt-3">Watch your report's status change in real-time. Know exactly when units are deployed and see their estimated time of arrival.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-box text-center">
+                <div class="bg-light text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 60px; height: 60px;">
+                    <i data-lucide="shield-check" style="width: 30px; height: 30px;"></i>
+                </div>
+                <h5 class="fw-bolder text-brand-blue text-uppercase">By Group 42</h5>
+                <p class="text-slate-500 small mb-0 mt-3">Love and Peace.</p>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+    
+    <div class="row mt-4">
+        
+        <div class="col-lg-3 col-md-4 mb-4">
+            
+            <div class="card card-custom-shadow border-light bg-white rounded-1 sticky-top mb-4" style="top: 90px; z-index: 1;">
+                <div class="card-body p-4 text-center">
+                    
+                    <div class="d-inline-block mb-3">
+                        {% if current_user.profile_image %}
+                            <img class="rounded-1 border border-3 border-white shadow-sm" src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" style="width: 80px; height: 80px; object-fit: cover;">
+                        {% else %}
+                            <img class="rounded-1 border border-3 border-white shadow-sm" src="https://ui-avatars.com/api/?name={{ current_user.first_name }}+{{ current_user.last_name }}&background=0f172a&color=fff&size=80">
+                        {% endif %}
+                    </div>
+                    
+                    <h5 class="fw-bold text-dark mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h5>
+                    <p class="text-slate-500 small mb-2 d-flex align-items-center justify-content-center gap-1">
+                        <i data-lucide="map-pin" class="text-danger" style="width: 14px;"></i> {{ current_user.area.area_name }}
+                    </p>
+                    
+                    <span class="badge px-3 py-2 rounded-1 shadow-sm text-uppercase fw-bold mb-4 d-inline-flex align-items-center gap-1
+                        {% if current_user.role == 'admin' %} bg-dark 
+                        {% elif current_user.role == 'responder' %} bg-danger 
+                        {% else %} badge-soft-info border text-dark {% endif %}">
+                        <i data-lucide="shield" style="width: 14px;"></i> {{ current_user.role }}
+                    </span>
+                    
+                    <hr class="border-light mb-4">
+                    
+                    <div class="d-grid gap-2">
+                        
+                        {% if current_user.role == 'resident' %}
+                        <a href="{{ url_for('main.report_incident') }}" class="btn btn-danger fw-bold shadow-sm rounded-1 py-2 d-flex justify-content-center align-items-center gap-2 text-uppercase tracking-wide small">
+                            <i data-lucide="megaphone" class="lucide-sm"></i> Report Emergency
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('main.account') }}" class="btn bg-light fw-bold border-light shadow-sm rounded-1 py-2 text-dark d-flex justify-content-center align-items-center gap-2 hover-opacity text-uppercase tracking-wide small">
+                            <i data-lucide="settings" class="lucide-sm text-slate-500"></i> My Profile
+                        </a>
+
+                        {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-dark fw-bold shadow-sm rounded-1 py-2 mt-2 d-flex justify-content-center align-items-center gap-2 text-uppercase tracking-wide small">
+                                <i data-lucide="sliders-horizontal" class="lucide-sm"></i> Admin Panel
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if current_user.role == 'responder' %}
+            <div class="card card-custom-shadow border-light rounded-1 bg-white mt-4 overflow-hidden sticky-top" style="top: 480px; z-index: 1;">
+                <div class="card-header bg-transparent border-light py-3 px-4 d-flex align-items-center gap-2">
+                    <i data-lucide="radio" class="text-brand-blue lucide-sm"></i>
+                    <h6 class="fw-bold text-brand-blue mb-0 tracking-wide text-uppercase small">Duty Status</h6>
+                </div>
+                <div class="card-body p-4 text-center bg-light">
+                    
+                    {% if current_user.availability == 'On Duty' %}
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                            <i data-lucide="shield-check"></i>
+                        </div>
+                        <h5 class="fw-bold text-success mb-3">On Duty (Available)</h5>
+                    {% elif current_user.availability == 'Deployed' %}
+                        <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                            <i data-lucide="siren"></i>
+                        </div>
+                        <h5 class="fw-bold text-danger mb-3">Deployed (Busy)</h5>
+                    {% else %}
+                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                            <i data-lucide="power-off"></i>
+                        </div>
+                        <h5 class="fw-bold text-secondary mb-3">Off Duty</h5>
+                    {% endif %}
+                    
+                    <form action="{{ url_for('main.toggle_status') }}" method="POST">
+                        {% if current_user.availability == 'Off Duty' %}
+                            <button type="submit" class="btn btn-success w-100 rounded-1 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 text-uppercase tracking-wide small">
+                                <i data-lucide="log-in" class="lucide-sm"></i> Clock In
+                            </button>
+                        {% elif current_user.availability == 'On Duty' %}
+                            <button type="submit" class="btn btn-outline-secondary w-100 rounded-1 fw-bold d-flex align-items-center justify-content-center gap-2 bg-white text-uppercase tracking-wide small">
+                                <i data-lucide="log-out" class="lucide-sm"></i> Clock Out
+                            </button>
+                        {% elif current_user.availability == 'Deployed' %}
+                            <button type="button" class="btn btn-danger w-100 rounded-1 fw-bold text-uppercase tracking-wide small" disabled>
+                                Active on Scene
+                            </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+        <div class="col-lg-9 col-md-8"> 
+            <div class="bg-white rounded-1 card-custom-shadow p-4 mb-4 border-light h-100">
+                
+                {% if current_user.role == 'resident' %}
+                    <ul class="nav nav-underline mb-4 border-bottom border-light pb-2" id="dashboardTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bolder text-uppercase tracking-wide small" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendarView" type="button" role="tab" style="color: #0f172a;"><i data-lucide="calendar" class="lucide-sm me-1"></i> Community Calendar</button>
+                        </li>
+                        <li class="nav-item ms-3" role="presentation">
+                            <button class="nav-link fw-bolder text-uppercase tracking-wide small text-muted" id="myreports-tab" data-bs-toggle="tab" data-bs-target="#myreports" type="button" role="tab"><i data-lucide="folder" class="lucide-sm me-1"></i> My Reports</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="dashboardTabsContent">
+                        <div class="tab-pane fade show active" id="calendarView" role="tabpanel">
+                            <div id='homeCalendar' style="min-height: 500px;"></div>
+                        </div>
+
+                        <div class="tab-pane fade" id="myreports" role="tabpanel">
+                            {% for incident in my_incidents %}
+                                <div class="incident-card" data-priority="{{ incident.severity }}" data-status="{{ incident.status }}">
+                                    {% include '_incident_card.html' %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-light text-center p-5 rounded-1 border-light">
+                                    <p class="text-slate-500 mb-0">You have not reported any incidents yet.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                {% elif current_user.role == 'responder' %}
+                    <h4 class="text-danger mb-4 fw-bolder d-flex align-items-center gap-2 text-uppercase tracking-wide">
+                        <i data-lucide="radio-tower"></i> Action Required
+                    </h4>
+                    
+                    <div class="mb-2">
+                        <div id='homeCalendar' style="min-height: 500px;"></div>
+                    </div>
+                
+                {% elif current_user.role == 'admin' %}
+                    <div class="alert border border-light rounded-1 p-5 text-center shadow-sm bg-white h-100 d-flex flex-column justify-content-center align-items-center">
+                        <div class="bg-brand-blue bg-opacity-10 text-brand-blue rounded-circle d-inline-flex justify-content-center align-items-center mb-4" style="width: 80px; height: 80px;">
+                            <i data-lucide="shield-check" style="width: 40px; height: 40px; stroke-width: 1.5;"></i>
+                        </div>
+                        <h3 class="fw-bolder text-brand-blue mb-2 text-uppercase tracking-wide">System Administration Active</h3>
+                        <p class="text-slate-500 mb-4" style="max-width: 500px;">You are securely logged into the SafeWatch Administration node. Please proceed to the Control Center to manage active incidents, system users, and dispatch regional alerts.</p>
+                        <a href="{{ url_for('main.admin_dashboard') }}" class="btn bg-brand-blue text-white fw-bold rounded-1 px-5 py-3 text-uppercase tracking-wide shadow-sm hover-opacity d-inline-flex align-items-center gap-2">
+                            <i data-lucide="sliders-horizontal" class="lucide-sm"></i> Launch Admin Panel
+                        </a>
+                    </div>
+                {% endif %}
+                
+            </div>
+        </div>
+    </div>
+
+    {% if current_user.role in ['resident', 'responder'] %}
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <style>
+        .fc-theme-bootstrap5 .fc-scrollgrid { border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden; } 
+        .fc-theme-bootstrap5 .fc-button-primary { background-color: #f8fafc !important; border-color: #e2e8f0 !important; color: #475569 !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; border-radius: 4px; }
+        .fc-theme-bootstrap5 .fc-button-primary:hover { background-color: #e2e8f0 !important; color: #0f172a !important; }
+        .fc-theme-bootstrap5 .fc-button-active { background-color: #0f172a !important; border-color: #0f172a !important; color: #ffffff !important; }
+        .fc-daygrid-event { cursor: pointer; border-radius: 2px; padding: 4px 6px; font-weight: 600; font-size: 0.8rem; text-align: center; margin: 2px 4px !important; border: none; }
+        .fc-toolbar-title { color: #1e293b; font-weight: 800 !important; font-size: 1.2rem !important; text-transform: uppercase; }
+        .fc-col-header-cell-cushion { color: #64748b; font-weight: 600; text-decoration: none; padding: 10px 0; }
+        .fc-daygrid-day-number { color: #334155; font-weight: 500; text-decoration: none; padding: 8px; }
+    </style>
+
+    <div class="modal fade" id="dailyIncidentsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-1 border-0 shadow-lg">
+          <div class="modal-header border-light p-4 pb-3">
+            <h5 class="modal-title fw-bolder text-brand-blue d-flex align-items-center gap-2 text-uppercase tracking-wide small">
+                <i data-lucide="calendar-check" class="text-primary lucide-sm"></i> Incidents for <span id="modalDateDisplay" class="ms-1 text-dark"></span>
+            </h5>
+            <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="list-group list-group-flush" id="modalIncidentList"></div>
+          </div>
+          <div class="modal-footer border-light p-3 bg-light rounded-bottom-1">
+            <button type="button" class="btn btn-dark rounded-1 fw-bold px-4 text-uppercase tracking-wide small" data-bs-dismiss="modal">Close Window</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons(); 
+            
+            var calendarEl = document.getElementById('homeCalendar');
+            if (calendarEl) {
+                var calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    aspectRatio: 1.8, 
+                    contentHeight: 'auto',
+                    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                    themeSystem: 'bootstrap5',
+                    events: {{ events | tojson | safe }},
+                    eventClick: function(info) {
+                        info.jsEvent.preventDefault(); 
+                        const dateDisplay = info.event.extendedProps.date_display;
+                        const incidents = info.event.extendedProps.incidents;
+                        
+                        document.getElementById('modalDateDisplay').textContent = dateDisplay;
+                        const listContainer = document.getElementById('modalIncidentList');
+                        listContainer.innerHTML = ''; 
+                        
+                        incidents.forEach(inc => {
+                            let badgeClass = inc.severity === 'High' ? 'bg-danger' : (inc.severity === 'Medium' ? 'bg-warning text-dark' : 'bg-success');
+                            let statusBadge = inc.status === 'Dispatched' ? 'bg-info text-dark' : (inc.status === 'Resolved' ? 'bg-success' : 'bg-secondary');
+
+                            listContainer.innerHTML += `
+                                <a href="${inc.url}" class="list-group-item list-group-item-action p-4 border-bottom border-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge ${badgeClass} rounded-1 px-3 py-1 fw-bold border">${inc.severity}</span>
+                                        <span class="text-slate-500 small fw-medium d-flex align-items-center gap-1"><i data-lucide="clock" style="width:14px;"></i> ${inc.time}</span>
+                                    </div>
+                                    <h6 class="fw-bold text-brand-blue mb-1">${inc.title}</h6>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <span class="badge ${statusBadge} rounded-1 px-2 py-1 small fw-bold text-uppercase">${inc.status}</span>
+                                        <span class="text-primary small fw-bold d-flex align-items-center gap-1 text-uppercase tracking-wide">View Details <i data-lucide="arrow-right" style="width:14px;"></i></span>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                        lucide.createIcons(); 
+                        new bootstrap.Modal(document.getElementById('dailyIncidentsModal')).show();
+                    }
+                });
+                
+              
+                var tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+                tabEls.forEach(function(tabEl) {
+                    tabEl.addEventListener('shown.bs.tab', function (event) {
+                        calendar.render();
+                    });
+                });
+                
+                
+                setTimeout(() => calendar.render(), 200);
+            }
+        });
+    </script>
+    {% endif %}
+{% endif %}
+{% endblock %}

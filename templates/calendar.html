@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+<style>
+    
+    .fc-theme-bootstrap5 .fc-scrollgrid { 
+        border: 1px solid #e2e8f0; 
+        border-radius: 12px; 
+        overflow: hidden; 
+    }
+    
+    .fc-theme-bootstrap5 .fc-button-primary {
+        background-color: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        color: #475569 !important;
+        font-weight: 600;
+        text-transform: capitalize;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        border-radius: 8px;
+    }
+    
+    .fc-theme-bootstrap5 .fc-button-primary:hover { 
+        background-color: #e2e8f0 !important; 
+        color: #0f172a !important; 
+    }
+    
+    .fc-theme-bootstrap5 .fc-button-active { 
+        background-color: #0f172a !important; 
+        border-color: #0f172a !important; 
+        color: #ffffff !important; 
+    }
+    
+    .fc-daygrid-event {
+        cursor: pointer;
+        border-radius: 6px;
+        padding: 4px 6px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-align: center;
+        margin: 2px 4px !important;
+        border: none;
+    }
+    
+    .fc-daygrid-event:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .fc-toolbar-title { color: #1e293b; font-weight: 800 !important; font-size: 1.5rem !important; }
+    .fc-col-header-cell-cushion { color: #64748b; font-weight: 600; text-decoration: none; padding: 10px 0; }
+    .fc-daygrid-day-number { color: #334155; font-weight: 500; text-decoration: none; padding: 8px; }
+    .fc-day-today { background-color: #f8fafc !important; }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+            <div>
+                <a href="{{ url_for('main.home') }}" class="text-decoration-none text-slate-500 mb-2 d-inline-flex align-items-center gap-2 hover-opacity fw-medium small">
+                    <i data-lucide="arrow-left" class="lucide-sm"></i> Return to Dashboard
+                </a>
+                <h2 class="text-brand-blue fw-bolder mb-0 d-flex align-items-center gap-2 mt-2">
+                    <i data-lucide="calendar-days" class="text-primary lucide-lg"></i> Temporal Analytics
+                </h2>
+                <p class="text-slate-500 small mb-0 mt-1">Track incident trends, frequency, and historical data.</p>
+            </div>
+            
+            <div class="mt-3 mt-md-0 bg-white p-3 rounded-4 card-custom-shadow d-flex gap-3 align-items-center">
+                <span class="small fw-bold text-slate-500 text-uppercase tracking-wide pe-2 border-end">Highest Priority</span>
+                <span class="badge badge-soft-danger rounded-pill"><i class="bi bi-circle-fill small me-1 text-danger"></i> High</span>
+                <span class="badge badge-soft-warning rounded-pill text-dark"><i class="bi bi-circle-fill small me-1 text-warning"></i> Medium</span>
+                <span class="badge badge-soft-success rounded-pill"><i class="bi bi-circle-fill small me-1 text-success"></i> Low</span>
+            </div>
+        </div>
+
+        <div class="card card-custom-shadow border-light rounded-4 bg-white p-4 p-md-5 mb-5">
+            <div id="analyticsCalendar"></div>
+        </div>
+        
+    </div>
+</div>
+
+<div class="modal fade" id="dailyIncidentsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header border-light p-4 pb-3">
+        <h5 class="modal-title fw-bolder text-brand-blue d-flex align-items-center gap-2">
+            <i data-lucide="calendar-check" class="text-primary lucide-sm"></i> 
+            Incidents for <span id="modalDateDisplay" class="ms-1 text-dark"></span>
+        </h5>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="list-group list-group-flush" id="modalIncidentList"></div>
+      </div>
+      <div class="modal-footer border-light p-3 bg-light rounded-bottom-4">
+        <button type="button" class="btn btn-dark rounded-pill fw-medium px-4" data-bs-dismiss="modal">Close Window</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        lucide.createIcons();
+
+        var calendarEl = document.getElementById('analyticsCalendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            
+            aspectRatio: 2.0, 
+            contentHeight: 'auto', 
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
+            },
+            themeSystem: 'bootstrap5',
+            events: {{ events | tojson | safe }},
+            eventClick: function(info) {
+                info.jsEvent.preventDefault(); 
+                
+                
+                const dateDisplay = info.event.extendedProps.date_display;
+                const incidents = info.event.extendedProps.incidents;
+                
+                
+                document.getElementById('modalDateDisplay').textContent = dateDisplay;
+                
+                const listContainer = document.getElementById('modalIncidentList');
+                listContainer.innerHTML = ''; 
+                
+                incidents.forEach(inc => {
+                    
+                    let badgeClass = 'bg-success';
+                    if (inc.severity === 'High') badgeClass = 'bg-danger';
+                    if (inc.severity === 'Medium') badgeClass = 'bg-warning text-dark';
+                    
+                    let statusBadge = 'bg-secondary';
+                    if (inc.status === 'Dispatched') statusBadge = 'bg-info text-dark';
+                    if (inc.status === 'Resolved') statusBadge = 'bg-success';
+
+                    const itemHtml = `
+                        <a href="${inc.url}" class="list-group-item list-group-item-action p-4 border-bottom border-light" style="transition: background-color 0.2s;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge ${badgeClass} rounded-pill px-3 py-1 fw-bold border">${inc.severity}</span>
+                                <span class="text-slate-500 small fw-medium d-flex align-items-center gap-1">
+                                    <i data-lucide="clock" style="width:14px;"></i> ${inc.time}
+                                </span>
+                            </div>
+                            <h6 class="fw-bold text-brand-blue mb-1">${inc.title}</h6>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="badge ${statusBadge} rounded-pill px-2 py-1 small fw-medium">${inc.status}</span>
+                                <span class="text-primary small fw-bold d-flex align-items-center gap-1">
+                                    View Details <i data-lucide="arrow-right" style="width:14px;"></i>
+                                </span>
+                            </div>
+                        </a>
+                    `;
+                    listContainer.innerHTML += itemHtml;
+                });
+                
+                lucide.createIcons(); 
+               
+                var myModal = new bootstrap.Modal(document.getElementById('dailyIncidentsModal'));
+                myModal.show();
+            }
+        });
+        
+        calendar.render();
+    });
+</script>
+{% endblock %}

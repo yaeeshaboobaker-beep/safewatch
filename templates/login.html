@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-12 col-xl-10">
+        
+        <div class="card border-0 shadow-lg rounded-0 overflow-hidden">
+            <div class="row g-0">
+                
+                <div class="col-md-5 d-none d-md-block position-relative" style="background: url('https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=1000&auto=format&fit=crop') center center / cover;">
+                    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(to bottom, rgba(15,23,42,0.8), rgba(15,23,42,0.95));"></div>
+                    <div class="position-absolute bottom-0 start-0 p-5 text-white">
+                        <i data-lucide="shield-check" class="text-danger mb-3" style="width: 48px; height: 48px; stroke-width: 1.5;"></i>
+                        <h2 class="fw-bolder tracking-wide">Secure Access</h2>
+                        <p class="text-light text-opacity-75 mb-0">Authorized personnel and registered community members only. eThekwini SafeWatch Network.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-7 col-12 bg-white p-4 p-sm-5 d-flex align-items-center">
+                    <div class="w-100 mx-auto" style="max-width: 450px;">
+                        
+                        <div class="mb-5 d-md-none text-center">
+                            <i data-lucide="shield-check" class="text-danger mb-2" style="width: 40px; height: 40px;"></i>
+                            <h3 class="fw-bolder text-brand-blue tracking-wide mb-1">Secure Access</h3>
+                        </div>
+
+                        <h4 class="fw-bolder text-brand-blue mb-1 d-none d-md-block">Welcome Back</h4>
+                        <p class="text-slate-500 small mb-4">Enter your credentials to access the dashboard.</p>
+                        
+                        <form method="POST" action="">
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-4">
+                                {{ form.email.label(class="form-label fw-bold text-dark small text-uppercase tracking-wide mb-2") }}
+                                <div class="position-relative">
+                                    <i data-lucide="mail" class="position-absolute text-muted" style="left: 16px; top: 50%; transform: translateY(-50%); width: 18px;"></i>
+                                    {% if form.email.errors %}
+                                        {{ form.email(class="form-control form-control-lg rounded-1 is-invalid bg-light border-danger", style="padding-left: 46px; font-size: 0.95rem;") }}
+                                        <div class="invalid-feedback ps-2">{% for error in form.email.errors %}{{ error }}{% endfor %}</div>
+                                    {% else %}
+                                        {{ form.email(class="form-control form-control-lg rounded-1 bg-light border-light shadow-none", style="padding-left: 46px; font-size: 0.95rem;") }}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    {{ form.password.label(class="form-label fw-bold text-dark small text-uppercase tracking-wide mb-0") }}
+                                    <a href="{{ url_for('main.reset_request') }}" class="text-decoration-none text-danger small fw-bold">Forgot password?</a>
+                                </div>
+                                <div class="position-relative">
+                                    <i data-lucide="lock-keyhole" class="position-absolute text-muted" style="left: 16px; top: 50%; transform: translateY(-50%); width: 18px;"></i>
+                                    {% if form.password.errors %}
+                                        {{ form.password(class="form-control form-control-lg rounded-1 is-invalid bg-light border-danger", id="passwordField", style="padding-left: 46px; padding-right: 60px; font-size: 0.95rem;") }}
+                                    {% else %}
+                                        {{ form.password(class="form-control form-control-lg rounded-1 bg-light border-light shadow-none", id="passwordField", style="padding-left: 46px; padding-right: 60px; font-size: 0.95rem;") }}
+                                    {% endif %}
+                                    
+                                    <button class="btn btn-link position-absolute text-muted text-decoration-none small fw-bold" type="button" onclick="togglePassword('passwordField', this)" style="right: 5px; top: 50%; transform: translateY(-50%);">
+                                        SHOW
+                                    </button>
+                                </div>
+                                {% if form.password.errors %}
+                                    <div class="text-danger small mt-1 ps-2">{% for error in form.password.errors %}{{ error }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-4 form-check">
+                                {{ form.remember(class="form-check-input rounded-0 border-secondary", style="cursor: pointer;") }}
+                                {{ form.remember.label(class="form-check-label text-slate-500 small fw-medium ms-1", style="cursor: pointer;") }}
+                            </div>
+
+                            <div class="d-grid mb-4 mt-2">
+                                {{ form.submit(class="btn bg-brand-blue text-white btn-lg rounded-1 py-3 fw-bold shadow-sm d-flex justify-content-center align-items-center gap-2 text-uppercase tracking-wide") }}
+                            </div>
+                        </form>
+                        
+                        <div class="text-center pt-4 border-top border-light mt-4">
+                            <span class="text-slate-500 small">Don't have community access? </span>
+                            <a href="{{ url_for('main.register') }}" class="text-decoration-none text-brand-blue small fw-bolder text-uppercase">Apply Here</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword(fieldId, btnElement) {
+        const passwordInput = document.getElementById(fieldId);
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            btnElement.textContent = "HIDE";
+        } else {
+            passwordInput.type = "password";
+            btnElement.textContent = "SHOW";
+        }
+    }
+</script>
+{% endblock %}

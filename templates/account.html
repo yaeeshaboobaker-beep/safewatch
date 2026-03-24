@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-md-8 col-lg-6">
+        
+        <a href="{{ url_for('main.home') }}" class="text-decoration-none text-slate-500 mb-3 d-inline-flex align-items-center gap-2 hover-opacity fw-medium small">
+            <i data-lucide="arrow-left" class="lucide-sm"></i> Back to Dashboard
+        </a>
+
+        <div class="card card-custom-shadow border-light rounded-4 bg-white overflow-hidden">
+            <div class="card-header bg-brand-blue text-white text-center py-5 border-0">
+                
+                <div class="d-inline-block position-relative mb-3">
+                    {% if current_user.profile_image %}
+                        <img class="rounded-circle border border-4 border-white shadow" src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <img class="rounded-circle border border-4 border-white shadow" src="https://ui-avatars.com/api/?name={{ current_user.first_name }}+{{ current_user.last_name }}&background=0f172a&color=fff&size=100" style="width: 100px; height: 100px;">
+                    {% endif %}
+                </div>
+                
+                <h3 class="fw-bolder mb-0 tracking-wide">My Profile</h3>
+                <p class="text-light text-opacity-75 small mb-0 mt-2">Manage your account and regional assignments.</p>
+            </div>
+            
+            <div class="card-body p-4 p-md-5 bg-white">
+                <form method="POST" action="" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4 text-center">
+                        {{ form.picture.label(class="form-label fw-bold text-slate-500 small mb-2") }}
+                        {{ form.picture(class="form-control form-control-sm bg-light text-slate-500 rounded-3 w-75 mx-auto") }}
+                        {% if form.picture.errors %}
+                            <div class="text-danger small mt-1">{% for error in form.picture.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="border-light mb-4">
+                    
+                    <div class="row mb-4 g-3">
+                        <div class="col-md-6">
+                            {{ form.first_name.label(class="form-label fw-semibold text-slate-500 small mb-2") }}
+                            <div class="position-relative">
+                                <i data-lucide="user" class="position-absolute text-muted" style="left: 16px; top: 50%; transform: translateY(-50%); width: 18px;"></i>
+                                {{ form.first_name(class="form-control form-control-lg bg-light border-light shadow-sm rounded-3 fw-medium", style="padding-left: 46px; font-size: 0.95rem;") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.last_name.label(class="form-label fw-semibold text-slate-500 small mb-2") }}
+                            <div class="position-relative">
+                                <i data-lucide="user" class="position-absolute text-muted opacity-50" style="left: 16px; top: 50%; transform: translateY(-50%); width: 18px;"></i>
+                                {{ form.last_name(class="form-control form-control-lg bg-light border-light shadow-sm rounded-3 fw-medium", style="padding-left: 46px; font-size: 0.95rem;") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form.email.label(class="form-label fw-semibold text-slate-500 small mb-2") }}
+                        <div class="position-relative">
+                            <i data-lucide="mail" class="position-absolute text-muted" style="left: 16px; top: 50%; transform: translateY(-50%); width: 18px;"></i>
+                            
+                            {% if current_user.role == 'admin' %}
+                                {{ form.email(class="form-control form-control-lg bg-light border-light shadow-sm rounded-3 fw-medium text-muted", style="padding-left: 46px; font-size: 0.95rem; pointer-events: none;", readonly=true) }}
+                                <div class="form-text mt-1 small text-danger"><i data-lucide="lock" style="width: 12px;"></i> Security Lock: Admin emails cannot be changed.</div>
+                            {% elif form.email.errors %}
+                                {{ form.email(class="form-control form-control-lg is-invalid bg-light border-danger rounded-3", style="padding-left: 46px; font-size: 0.95rem;") }}
+                                <div class="invalid-feedback ps-2">{% for error in form.email.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                            {% else %}
+                                {{ form.email(class="form-control form-control-lg bg-light border-light shadow-sm rounded-3 fw-medium", style="padding-left: 46px; font-size: 0.95rem;") }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label fw-semibold text-slate-500 small mb-2 d-flex align-items-center gap-1">
+                            <i data-lucide="map-pin" class="text-primary lucide-sm"></i> {{ form.area_code.label.text }}
+                        </label>
+                        
+                        {% if current_user.role == 'admin' %}
+                            {{ form.area_code(class="form-select form-select-lg bg-light border-light text-muted shadow-sm rounded-3 fw-bold", style="pointer-events: none;") }}
+                            <div class="form-text mt-2 small text-danger"><i data-lucide="lock" style="width: 12px;"></i> Security Lock: Admin regions are hardcoded.</div>
+                        {% elif form.area_code.errors %}
+                            {{ form.area_code(class="form-select form-select-lg is-invalid bg-light border-danger rounded-3 fw-medium") }}
+                            <div class="invalid-feedback">{% for error in form.area_code.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                        {% else %}
+                            {{ form.area_code(class="form-select form-select-lg bg-primary bg-opacity-10 border-primary border-opacity-25 text-brand-blue shadow-sm rounded-3 fw-bold") }}
+                            <div class="form-text mt-2 small text-slate-500"><i data-lucide="info" style="width: 14px;"></i> Updating your region will change which alerts you receive.</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid mt-2">
+                        <button type="submit" class="btn btn-dark btn-lg fw-bold rounded-pill shadow-sm d-flex justify-content-center align-items-center gap-2">
+                            <i data-lucide="save" class="lucide-sm"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

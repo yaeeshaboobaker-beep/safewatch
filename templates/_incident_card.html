@@ -1,0 +1,33 @@
+<a href="{{ url_for('main.view_incident', incident_id=incident.id) }}" class="text-decoration-none">
+    <div class="card card-custom-shadow border-0 rounded-4 bg-white p-4 mb-3 shadow-hover" style="transition: all 0.2s ease;">
+        
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge {% if incident.severity == 'High' %} badge-soft-danger {% elif incident.severity == 'Medium' %} badge-soft-warning {% else %} badge-soft-success {% endif %} rounded-pill px-3 py-1 fw-medium">
+                    {{ incident.severity }} Priority
+                </span>
+                
+                <span class="badge {% if incident.status == 'Pending' %} bg-danger text-white {% elif incident.status == 'Dispatched' %} bg-info text-dark {% else %} bg-success text-white {% endif %} rounded-pill px-3 py-1 fw-medium shadow-sm">
+                    {{ incident.status }}
+                </span>
+                
+                {% if incident.internal_notes %}
+                    <span class="badge bg-light text-primary border rounded-pill px-2 py-1 fw-bold d-flex align-items-center gap-1" title="New communications attached">
+                        <i data-lucide="message-square" style="width: 12px;"></i> Log
+                    </span>
+                {% endif %}
+            </div>
+            
+            <span class="text-slate-500 small fw-medium d-flex align-items-center gap-1">
+                <i data-lucide="clock" class="lucide-sm"></i> {{ incident.date_posted.strftime('%H:%M • %b %d') }}
+            </span>
+        </div>
+        
+        <h5 class="fw-bold text-brand-blue mb-1 mt-2">{{ incident.incident_type }}</h5>
+        
+        <div class="text-slate-500 small d-flex align-items-center gap-1 mt-2">
+            <i data-lucide="map-pin" class="text-primary" style="width: 14px;"></i> 
+            <span class="text-truncate">{{ incident.location }}</span>
+        </div>
+    </div>
+</a>

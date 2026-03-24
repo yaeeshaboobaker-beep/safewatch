@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        
+        <a href="{{ url_for('main.admin_dashboard') }}" class="text-decoration-none text-muted mb-3 d-inline-block">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+
+        {% if generated_accounts %}
+            <div class="card border-success border-2 rounded-4 shadow-sm mb-4 bg-success bg-opacity-10">
+                <div class="card-header bg-success text-white border-0 py-3 rounded-top-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-check-circle-fill me-2"></i> Accounts Generated Successfully!</h5>
+                </div>
+                <div class="card-body p-4 bg-white m-1 rounded-bottom-3">
+                    <p class="text-danger fw-bold small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> IMPORTANT: Copy these credentials now. You will not be able to see these passwords again once you leave this page.
+                    </p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light small text-uppercase text-muted">
+                                <tr>
+                                    <th>Temporary Email (Username)</th>
+                                    <th>Temporary Password</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for acc in generated_accounts %}
+                                <tr>
+                                    <td class="fw-bold text-primary">{{ acc.email }}</td>
+                                    <td class="fw-bold font-monospace">{{ acc.password }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="small text-muted mb-0">Instruct the personnel to log in using these details and update their profile (Name, Email, and Password) immediately via the "Account" tab.</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card card-custom-shadow border-0 rounded-4 bg-white mb-5 shadow-hover">
+            <div class="card-header bg-dark text-white border-0 py-3 rounded-top-4">
+                <h4 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-person-badge-fill me-2"></i> Batch Generate Personnel
+                </h4>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <p class="text-muted mb-4">Select the role and region to generate secure, temporary access credentials for new staff. Maximum 5 per batch.</p>
+                
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            {{ form.role.label(class="form-label fw-semibold text-secondary small") }}
+                            {{ form.role(class="form-select border-light shadow-sm bg-light") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.specialization.label(class="form-label fw-semibold text-secondary small") }}
+                            {{ form.specialization(class="form-select border-light shadow-sm bg-light") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.area_code.label(class="form-label fw-semibold text-secondary small") }}
+                        {% if form.area_code.errors %}
+                            {{ form.area_code(class="form-select is-invalid border-danger") }}
+                            <div class="invalid-feedback">{% for error in form.area_code.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                        {% else %}
+                            {{ form.area_code(class="form-select border-light shadow-sm bg-light") }}
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4 p-3 border border-warning border-opacity-50 bg-warning bg-opacity-10 rounded-3">
+                        {{ form.count.label(class="form-label fw-bold text-dark") }}
+                        {% if form.count.errors %}
+                            {{ form.count(class="form-control form-control-lg is-invalid", type="number", min="1", max="5") }}
+                            <div class="invalid-feedback">{% for error in form.count.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                        {% else %}
+                            {{ form.count(class="form-control form-control-lg fw-bold text-center border-warning", type="number", min="1", max="5") }}
+                            <div class="form-text text-dark opacity-75 mt-2"><i class="bi bi-info-circle-fill me-1"></i> Generates 1 to 5 accounts with random temporary emails and secure passwords.</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-dark btn-lg border-0 py-3 fw-bold rounded-pill shadow-sm">
+                            <i class="bi bi-cpu-fill me-2"></i> Generate Accounts
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
