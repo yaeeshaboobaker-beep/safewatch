@@ -28,10 +28,22 @@
                             </thead>
                             <tbody>
                                 {% for acc in generated_accounts %}
-                                <tr>
-                                    <td class="fw-bold text-primary">{{ acc.email }}</td>
-                                    <td class="fw-bold font-monospace">{{ acc.password }}</td>
-                                </tr>
+                               <tr>
+                             <td class="fw-bold text-primary">
+                                {{ acc.email }}
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                             onclick="navigator.clipboard.writeText('{{ acc.email }}')">
+                             Copy
+                              </button>
+                               </td>
+                             <td class="fw-bold font-monospace">
+                             {{ acc.password }}
+                           <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                           onclick="navigator.clipboard.writeText('{{ acc.password }}')">
+                           Copy
+                          </button>
+                          </td>
+                          </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
